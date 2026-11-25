@@ -14,7 +14,7 @@ Open-source. Keyless. No obfuscation.
 
 **Developed and maintained by TavSS & Crack-RBX**
 
-[ScriptBlox](https://scriptblox.com/script/Universal-Script-Kant-Hub-Keyless-229326)
+[ScriptBlox](https://scriptblox.com/u/Crack_rbx)
 
 </div>
 
