@@ -13,7 +13,6 @@ Open-source. Keyless. No obfuscation.
 [![Open Source](https://img.shields.io/badge/Source-Open%20Source-success?style=flat-square&logo=github)](.)
 
 **Developed and maintained by TavSS & Crack-RBX**
-
 [ScriptBlox](https://scriptblox.com/u/Crack_rbx)
 
 </div>
