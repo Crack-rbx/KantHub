@@ -4,34 +4,39 @@
 
 ### Universal Roblox Script Hub
 
-**A collection of scripts built around simplicity, modularity and transparency.**
+A modular collection of Roblox scripts built around simplicity, integration and transparency.
 
-Open-source. Keyless. No obfuscation.
+**Keyless · No Obfuscation · Source-Available**
 
 [![Universal](https://img.shields.io/badge/Roblox-Universal-2ea44f?style=flat-square&logo=roblox)](https://scriptblox.com/script/Universal-Script-Kant-Hub-Keyless-229326)
 [![Keyless](https://img.shields.io/badge/Access-Keyless-blue?style=flat-square)](https://scriptblox.com/script/Universal-Script-Kant-Hub-Keyless-229326)
-[![Open Source](https://img.shields.io/badge/Source-Open%20Source-success?style=flat-square&logo=github)](.)
+[![Source Available](https://img.shields.io/badge/Source-Available-success?style=flat-square&logo=github)](.)
 
-**Developed and maintained by TavSS & Crack-RBX**
-[ScriptBlox](https://scriptblox.com/u/Crack_rbx)
+**Developed by TavSS & Crack-RBX**
+
+[ScriptBlox Profile](https://scriptblox.com/u/Crack_rbx)
 
 </div>
 
 ---
 
-## About
+## Overview
 
-KantHub is a collection of Roblox scripts designed to bring multiple features together in a single, unified environment.
+KantHub is a universal Roblox script hub that brings multiple features together into a unified environment.
 
-Built with its own UI Engine and a modular architecture, KantHub focuses on keeping its systems organized, integrated and easy to inspect.
+Designed around an internally developed UI Engine and an integrated modular architecture, the project aims to provide a consistent experience while keeping its implementation readable and accessible.
 
-Rather than relying on external UI frameworks or unnecessary restrictions, the project follows a straightforward philosophy: **keep the code accessible, maintainable and transparent.**
+KantHub is built on three core principles:
+
+- **Simplicity:** straightforward systems without unnecessary complexity.
+- **Integration:** modules designed to operate together within a unified environment.
+- **Transparency:** readable source code without obfuscation or hidden implementations.
 
 ## Features
 
-KantHub includes multiple systems designed to work together.
+KantHub brings together different functionalities through an integrated system.
 
-| Feature | Description |
+| Module | Description |
 |---|---|
 | WallHack | Player visualization |
 | Aimbot | Aim assistance |
@@ -39,93 +44,106 @@ KantHub includes multiple systems designed to work together.
 | Fly | Flight functionality |
 | Noclip | Collision bypass |
 
-The available features may vary depending on the current implementation and updates.
+*Feature availability and implementation may change between releases.*
 
-## Core Architecture
+## Architecture
 
-KantHub is built around an internally developed UI Engine and an integrated module system.
+KantHub uses an internally developed architecture designed to keep its interface, modules and runtime systems integrated.
 
 ### UI Engine
 
-The interface system is developed specifically for KantHub, rather than relying on a third-party UI framework.
+The UI Engine is developed specifically for KantHub.
 
-### GUI to Lua
+Rather than depending on external interface frameworks, the project maintains its own UI infrastructure, allowing greater control over its behavior, appearance and integration.
 
-KantHub includes a GUI-to-Lua conversion workflow that automatically combines the generated interface and its components into a single code output.
+### GUI-to-Lua
 
-This allows the interface to be assembled without manually maintaining separate generated scripts.
+KantHub includes an internal GUI-to-Lua conversion workflow.
+
+Generated interface components are automatically combined into a single code output, eliminating the need to manually maintain multiple generated scripts.
 
 ### Modular System
 
-The project uses a modular approach in which its components work together.
+KantHub follows a modular development approach in which its components are designed to work together.
 
-Each module handles its own errors, keeping error management close to the functionality responsible for them.
+Each module is responsible for its own functionality and error handling.
 
-This approach helps maintain separation of responsibilities without sacrificing integration.
+This keeps error management close to the systems responsible for it while maintaining integration across the project.
 
 ## Transparency & Integrity
 
-KantHub follows three fundamental principles:
+Transparency is a fundamental part of KantHub's development philosophy.
 
-- **No keys:** No key systems or unnecessary access barriers.
-- **No obfuscation:** Source code remains readable and accessible.
-- **Open source:** Anyone can inspect the implementation and verify what the scripts actually do.
+The project follows these principles:
 
-We believe users should be able to examine the software they choose to execute.
+| Principle | Description |
+|---|---|
+| Keyless | No key systems or unnecessary access barriers. |
+| No Obfuscation | Source code remains readable. |
+| Source Available | Users can inspect and study the implementation. |
+| Internal UI | Interface infrastructure developed specifically for KantHub. |
+| Modular Architecture | Components organized around individual responsibilities. |
 
-Transparency is not an optional feature of KantHub. It is part of the project's design philosophy.
+We believe users should be able to understand the software they choose to execute.
+
+For this reason, KantHub prioritizes source visibility and readable implementations.
 
 ## Installation & Usage
 
-KantHub is distributed through its official ScriptBlox publication.
+KantHub is officially distributed through ScriptBlox.
 
-**[View KantHub on ScriptBlox](https://scriptblox.com/script/Universal-Script-Kant-Hub-Keyless-229326)**
+**[Access KantHub on ScriptBlox](https://scriptblox.com/script/Universal-Script-Kant-Hub-Keyless-229326)**
 
-The published project is identified as:
+Publication information:
 
-- Universal Script
-- Keyless
-- ScriptBlox reviewed
+- **Category:** Universal Script
+- **Access:** Keyless
+- **Publication:** ScriptBlox
+- **Review Status:** ScriptBlox reviewed
+
+Always refer to the official publication for the latest available version.
 
 ## Development
 
-KantHub is continuously maintained by its developers.
+KantHub is maintained by its development team, with an emphasis on consistency, maintainability and internal infrastructure.
 
-The project prioritizes:
+Development priorities include:
 
-- Internal UI development.
-- Modular and integrated systems.
-- Individual error handling.
-- Readable source code.
+- Continuous improvement of the internal UI Engine.
+- Integrated and modular systems.
+- Individual module error handling.
+- Readable and maintainable source code.
 - Consistent implementation across features.
+- Transparent development practices.
 
-## Team
+## Development Team
 
 <div align="center">
 
-### Developed by
+### TavSS & Crack-RBX
 
-**TavSS & Crack-RBX**
-
-KantHub Development Team
+**KantHub Development Team**
 
 </div>
 
-## Source Availability & Transparency
+## Source Availability
 
-KantHub follows a source-available development model.
+KantHub follows a **source-available development model**.
 
-Its source code is made available for inspection and study, allowing users to understand how the project works without relying on hidden implementations.
+Its source code is accessible for inspection and study, allowing users to understand its implementation without relying on hidden or obfuscated code.
 
-However, source availability does not mean unrestricted use.
+However, source availability does not grant unrestricted usage rights.
 
-- **Readable Source:** Users can inspect and study the source code.
-- **No Obfuscation:** The project prioritizes readable implementations.
-- **No Keys:** No unnecessary key systems or access barriers.
-- **Restricted Modifications:** Changes, forks and derivative works require prior written authorization.
-- **Controlled Distribution:** Redistribution and commercialization are not permitted without authorization.
+The project maintains the following restrictions:
 
-Transparency and unrestricted licensing are different things. KantHub provides source visibility while retaining control over its intellectual property.
+- **Source Inspection:** Reading and studying the source code is permitted.
+- **Personal Use:** Running unmodified versions for personal, non-commercial use is permitted, subject to the license.
+- **Modification:** Changes and derivative works require prior written authorization.
+- **Redistribution:** Redistribution is restricted without authorization.
+- **Commercialization:** Commercial use requires prior written authorization.
+- **AI Training:** Using the source code for AI training requires prior written authorization.
+
+Transparency and unrestricted licensing are different concepts. KantHub provides source visibility while retaining control over its intellectual property.
 
 ## License
 
@@ -133,19 +151,19 @@ KantHub is distributed under the **Kant Hub Source-Available License (KHSAL) v1.
 
 Copyright (c) 2026 Crack-RBX and TavssDev. All rights reserved.
 
-This is a source-available license, not an open-source or free-software license.
+KHSAL is a source-available license, not an open-source or free-software license.
 
 The license permits reading and studying the source code, as well as running unmodified versions for personal, non-commercial use, subject to its terms.
 
 Modification, redistribution, commercialization, incorporation into other products and use for AI training require prior, express and written authorization from both licensors.
 
-**Full license:** [KHSAL v1.2](LICENSE)
+**[Read the full license — KHSAL v1.2](LICENSE)**
 
-## Support & Feedback
+## Official Links
 
-For updates, access the official publication:
-
-[![ScriptBlox](https://img.shields.io/badge/ScriptBlox-KantHub-blue?style=for-the-badge)](https://scriptblox.com/script/Universal-Script-Kant-Hub-Keyless-229326)
+- [KantHub — ScriptBlox](https://scriptblox.com/script/Universal-Script-Kant-Hub-Keyless-229326)
+- [Crack-RBX — ScriptBlox Profile](https://scriptblox.com/u/Crack_rbx)
+- [License — KHSAL v1.2](LICENSE)
 
 ---
 
@@ -155,6 +173,6 @@ For updates, access the official publication:
 
 *Transparency. Simplicity. Control.*
 
-Developed by TavSS & Crack-RBX.
+Developed and maintained by **TavSS & Crack-RBX**.
 
 </div>
