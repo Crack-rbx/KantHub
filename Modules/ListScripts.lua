@@ -4,7 +4,7 @@ local url = "https://raw.githubusercontent.com/Crack-rbx/KantHub/main/Modules/Li
 
 -- Numeric key = PlaceId; Universal = fallback
 local Scripts: { [any]: any } = {
-	Universal = "",
+	Universal = "https://raw.githubusercontent.com/Crack-rbx/KantHub/main/Scripts/Test.lua",
 	-- [7633926880] = "https://raw.githubusercontent.com/Crack-rbx/KantHub/main/Games/Exemplo.lua",
 }
 
