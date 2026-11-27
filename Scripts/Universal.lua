@@ -98,7 +98,7 @@ G2L_MODULES[G2L["6"]] = {
 Closure = function()
     local script = G2L["6"];local Loader = {}
 
-local URL          = "https://kant-hub-auth.vercel.app/private/UIEngine.lua"
+local URL          = "https://raw.githubusercontent.com/Crack-rbx/KantHub/main/Modules/UI-Engine.lua"
 local RETRY_DELAY  = 0.75
 local MAX_ATTEMPTS = 3
 
