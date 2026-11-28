@@ -16,7 +16,7 @@ export type ListScripts = {
 }
 
 local Scripts: ScriptMap = {
-	Universal = "https://raw.githubusercontent.com/Crack-rbx/KantHub/main/Scripts/Universal.lua",
+	Universal = "https://raw.githubusercontent.com/Crack-rbx/KantHub/2029f152eeb9795f1b2b98baf5cf3ac9534f9f88/Scripts/Universal.lua",
 	-- [7633926880] = "https://raw.githubusercontent.com/Crack-rbx/KantHub/main/Games/Exemplo.lua",
 }
 
