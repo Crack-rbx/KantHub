@@ -7,6 +7,7 @@
  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═╝  ╚═╝ ╚═════╝ ╚═════╝
                     @TavssDev @Crack-RBX
 --]=]
+-- Instances: 12 | Scripts: 1 | Modules: 6 | Tags: 0
 local G2L = {};
 
 -- StarterGui.LoadingUI
@@ -16,7 +17,6 @@ G2L["1"]["Enabled"] = false;
 G2L["1"]["ScreenInsets"] = Enum.ScreenInsets.DeviceSafeInsets;
 G2L["1"]["Name"] = [[LoadingUI]];
 G2L["1"]["ZIndexBehavior"] = Enum.ZIndexBehavior.Sibling;
-
 
 -- StarterGui.LoadingUI.Scripts
 G2L["2"] = Instance.new("Folder", G2L["1"]);
