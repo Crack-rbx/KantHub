@@ -7,15 +7,27 @@
  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═╝  ╚═╝ ╚═════╝ ╚═════╝
                     @TavssDev @Crack-RBX
 --]=]
--- Instances: 15 | Scripts: 1 | Modules: 2 | Tags: 0
+repeat task.wait() until game:IsLoaded()
+local AUTO_RUN = true
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
+while not LocalPlayer do
+	task.wait()
+	LocalPlayer = Players.LocalPlayer
+end
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
 local G2L = {};
 
--- StarterGui.Loader
-G2L["1"] = Instance.new("ScreenGui", game:GetService("CoreGui"));
+G2L["1"] = Instance.new("ScreenGui");
 G2L["1"]["IgnoreGuiInset"] = true;
 G2L["1"]["ScreenInsets"] = Enum.ScreenInsets.DeviceSafeInsets;
 G2L["1"]["Name"] = [[Loader]];
 G2L["1"]["ZIndexBehavior"] = Enum.ZIndexBehavior.Sibling;
+G2L["1"]["ResetOnSpawn"] = false;
+G2L["1"]["DisplayOrder"] = 999;
+G2L["1"]:SetAttribute("KantHubLoader", true);
 
 
 -- StarterGui.Loader.Modules
@@ -38,8 +50,9 @@ G2L["5"] = Instance.new("Folder", G2L["1"]);
 G2L["5"]["Name"] = [[Scripts]];
 
 
--- StarterGui.Loader.Scripts.Loader
+-- StarterGui.Loader.Scripts.Loader (placeholder desabilitado, sem codigo)
 G2L["6"] = Instance.new("LocalScript", G2L["5"]);
+G2L["6"]["Enabled"] = false;
 G2L["6"]["Name"] = [[Loader]];
 
 
@@ -133,14 +146,26 @@ G2L["f"]["Color"] = Color3.fromRGB(40, 40, 43);
 
 
 -- Require G2L wrapper
+-- Estados: loading / done / failed. Falhas e ciclos geram erro explicito,
+-- nunca um nil silencioso.
 local G2L_REQUIRE = require;
 local G2L_MODULES = {};
-local function require(Module: ModuleScript)
+
+local function require(Module: ModuleScript): any
 	local s = G2L_MODULES[Module]
-	if not s then return G2L_REQUIRE(Module) end
-	if s.Status == "done" then return s.Value end
-	if s.Status == "loading" then error("require cíclico: " .. Module.Name, 2) end
-	if s.Status == "failed" then error(s.Error, 2) end
+	if not s then
+		return G2L_REQUIRE(Module)
+	end
+
+	if s.Status == "done" then
+		return s.Value
+	end
+	if s.Status == "loading" then
+		error("cyclic require: " .. Module.Name, 2)
+	end
+	if s.Status == "failed" then
+		error(s.Error, 2)
+	end
 
 	s.Status = "loading"
 	local ok, result = xpcall(s.Closure, debug.traceback)
@@ -148,470 +173,658 @@ local function require(Module: ModuleScript)
 		s.Status, s.Error = "failed", result
 		error(result, 2)
 	end
+
 	s.Status, s.Value = "done", result
 	return result
 end
 
+
+---------------------------------------------------------------------
+-- MODULE: LoadingAnimation
+---------------------------------------------------------------------
 G2L_MODULES[G2L["3"]] = {
-Closure = function()
-    local script = G2L["3"];---------------------------------------------------------------------
--- SERVICES
----------------------------------------------------------------------
-local TweenService = game:GetService("TweenService")
+	Closure = function()
+		local TweenService = game:GetService("TweenService")
 
-local LoadingAnimation = {}
----------------------------------------------------------------------
--- CONFIGURATION
----------------------------------------------------------------------
-local CONFIG = {
-	EasingStyle     = Enum.EasingStyle.Quad,
-	EasingDirection = Enum.EasingDirection.Out,
+		local LoadingAnimation = {}
 
-	FadeDuration    = 1,
-	DisplayDuration = 2,
+		-----------------------------------------------------------------
+		-- CONFIGURATION
+		-----------------------------------------------------------------
+		local CONFIG = {
+			EasingStyle     = Enum.EasingStyle.Quad,
+			EasingDirection = Enum.EasingDirection.Out,
 
-	BackgroundTransparency = 0.65
-}
+			FadeDuration    = 1,
+			DisplayDuration = 2,
 
----------------------------------------------------------------------
--- STATE
----------------------------------------------------------------------
-local State = {
-	Loaded  = false,
-	Playing = false
-}
+			BackgroundTransparency = 0.65,
 
----------------------------------------------------------------------
--- REFERENCES
----------------------------------------------------------------------
-local ScreenGui
-local Background
-local CanvasGroup
+			InitTimeout = 10,
+			FadeGrace   = 2, -- folga alem de FadeDuration antes de forcar o valor final
+		}
 
----------------------------------------------------------------------
--- TWEEN
----------------------------------------------------------------------
-local function createTween(instance, properties, duration)
-	local tweenInfo=TweenInfo.new(duration,CONFIG.EasingStyle,CONFIG.EasingDirection)
-	return TweenService:Create(instance, tweenInfo, properties)
-end
+		-----------------------------------------------------------------
+		-- STATE
+		-----------------------------------------------------------------
+		local State = {
+			Loaded    = false, -- animacao concluida com sucesso
+			Playing   = false,
+			Cancelled = false,
+		}
 
----------------------------------------------------------------------
--- ANIMATION
----------------------------------------------------------------------
-local function fadeIn()
-	local canvasTween=createTween(CanvasGroup,{GroupTransparency=0},CONFIG.FadeDuration)
-	local backgroundTween=createTween(
-		Background,{BackgroundTransparency=CONFIG.BackgroundTransparency},CONFIG.FadeDuration)
-	canvasTween:Play()
-	backgroundTween:Play()
-	canvasTween.Completed:Wait()
-end
+		-----------------------------------------------------------------
+		-- REFERENCES
+		-----------------------------------------------------------------
+		local ScreenGui
+		local Background
+		local CanvasGroup
+		local ActiveTweens
 
-local function fadeOut()
-	local canvasTween=createTween(CanvasGroup,{GroupTransparency=1},CONFIG.FadeDuration)
-	local backgroundTween=createTween(Background,{BackgroundTransparency=1},CONFIG.FadeDuration)
-	canvasTween:Play()
-	backgroundTween:Play()
-	canvasTween.Completed:Wait()
-end
+		-----------------------------------------------------------------
+		-- HELPERS
+		-----------------------------------------------------------------
+		local function isAlive(): boolean
+			return not State.Cancelled
+				and ScreenGui ~= nil
+				and Background ~= nil
+				and CanvasGroup ~= nil
+				and ScreenGui:IsDescendantOf(game)
+		end
 
----------------------------------------------------------------------
--- PUBLIC METHODS
----------------------------------------------------------------------
-function LoadingAnimation:Init(screenGui)
-	ScreenGui=screenGui Background=ScreenGui:WaitForChild("UI").Background
-	CanvasGroup=ScreenGui:WaitForChild("UI").CanvasGroup return self end
-function LoadingAnimation:Play()
-	if State.Playing or State.Loaded then return false end
-	assert(CanvasGroup and Background,"LoadingAnimation is not initialized!")State.Playing=true
-	CanvasGroup.GroupTransparency=1 Background.BackgroundTransparency=1
-	CanvasGroup.Visible=true Background.Visible=true fadeIn()
-	task.wait(CONFIG.DisplayDuration)fadeOut()
-	State.Loaded=true State.Playing=false return true end
-function LoadingAnimation:IsLoaded()return State.Loaded end
-function LoadingAnimation:IsPlaying()return State.Playing end
-function LoadingAnimation:Reset()if State.Playing then return false end 
-	State.Loaded=false return true end
+		local function cancelTweens()
+			local tweens = ActiveTweens
+			ActiveTweens = nil
+			if tweens then
+				for _, tween in ipairs(tweens) do
+					pcall(function()
+						tween:Cancel()
+					end)
+				end
+			end
+		end
 
-return LoadingAnimation
-end;
+		local function createTween(instance, properties, duration)
+			local tweenInfo = TweenInfo.new(duration, CONFIG.EasingStyle, CONFIG.EasingDirection)
+			return TweenService:Create(instance, tweenInfo, properties)
+		end
+
+		-- Espera `seconds`, abortando cedo se a animacao for cancelada ou a GUI sumir.
+		local function waitAlive(seconds: number): boolean
+			local deadline = os.clock() + seconds
+			while os.clock() < deadline do
+				if not isAlive() then
+					return false
+				end
+				task.wait()
+			end
+			return isAlive()
+		end
+
+		-- Retorna false se foi cancelado / a GUI foi destruida durante o fade.
+		local function fade(canvasTarget: number, backgroundTarget: number): boolean
+			if not isAlive() then
+				return false
+			end
+
+			local canvas, background = CanvasGroup, Background
+			local canvasTween = createTween(canvas, { GroupTransparency = canvasTarget }, CONFIG.FadeDuration)
+			local backgroundTween = createTween(background, { BackgroundTransparency = backgroundTarget }, CONFIG.FadeDuration)
+
+			ActiveTweens = { canvasTween, backgroundTween }
+
+			local finished = false
+			local connection = canvasTween.Completed:Connect(function()
+				finished = true
+			end)
+
+			canvasTween:Play()
+			backgroundTween:Play()
+
+			local deadline = os.clock() + CONFIG.FadeDuration + CONFIG.FadeGrace
+			while not finished and os.clock() < deadline and isAlive() do
+				task.wait()
+			end
+
+			connection:Disconnect()
+			cancelTweens()
+
+			if not isAlive() then
+				return false
+			end
+
+			if not finished then
+				-- tween atrasado: forca o valor final em vez de abortar o fluxo
+				canvas.GroupTransparency = canvasTarget
+				background.BackgroundTransparency = backgroundTarget
+			end
+
+			return true
+		end
+
+		-----------------------------------------------------------------
+		-- PUBLIC METHODS
+		-----------------------------------------------------------------
+		function LoadingAnimation:Init(screenGui)
+			if State.Playing then
+				warn("[KantHub] LoadingAnimation:Init ignored while playing.")
+				return self
+			end
+
+			assert(typeof(screenGui) == "Instance" and screenGui:IsA("ScreenGui"), "LoadingAnimation:Init expects a ScreenGui")
+
+			local uiFolder = screenGui:WaitForChild("UI", CONFIG.InitTimeout)
+			assert(uiFolder, "LoadingAnimation: 'UI' folder was not found")
+
+			local background = uiFolder:FindFirstChild("Background")
+			local canvasGroup = uiFolder:FindFirstChild("CanvasGroup")
+			assert(background and background:IsA("Frame"), "LoadingAnimation: 'Background' Frame was not found")
+			assert(canvasGroup and canvasGroup:IsA("CanvasGroup"), "LoadingAnimation: 'CanvasGroup' was not found")
+
+			ScreenGui = screenGui
+			Background = background
+			CanvasGroup = canvasGroup
+			State.Cancelled = false
+
+			return self
+		end
+
+		function LoadingAnimation:Play()
+			if State.Playing or State.Loaded or State.Cancelled then
+				return false
+			end
+			assert(CanvasGroup and Background, "LoadingAnimation is not initialized!")
+
+			local canvas, background = CanvasGroup, Background
+			State.Playing = true
+
+			local ok, result = pcall(function()
+				canvas.GroupTransparency = 1
+				background.BackgroundTransparency = 1
+				canvas.Visible = true
+				background.Visible = true
+
+				if not fade(0, CONFIG.BackgroundTransparency) then
+					return false
+				end
+				if not waitAlive(CONFIG.DisplayDuration) then
+					return false
+				end
+				if not fade(1, 1) then
+					return false
+				end
+				return true
+			end)
+
+			-- sempre libera o estado e esconde os objetos, mesmo em falha/cancelamento
+			State.Playing = false
+			cancelTweens()
+			canvas.Visible = false
+			background.Visible = false
+
+			if not ok then
+				warn("[KantHub] LoadingAnimation failed: " .. tostring(result))
+				return false
+			end
+			if result ~= true then
+				return false
+			end
+
+			State.Loaded = true
+			return true
+		end
+
+		-- Interrompe a animacao em andamento (usar no Destroy do controlador).
+		function LoadingAnimation:Cancel()
+			State.Cancelled = true
+			cancelTweens()
+			return true
+		end
+
+		-- Cancela e solta as referencias as instancias.
+		function LoadingAnimation:Destroy()
+			self:Cancel()
+			ScreenGui = nil
+			Background = nil
+			CanvasGroup = nil
+			State.Loaded = false
+			return true
+		end
+
+		function LoadingAnimation:IsLoaded()
+			return State.Loaded
+		end
+
+		function LoadingAnimation:IsPlaying()
+			return State.Playing
+		end
+
+		function LoadingAnimation:Reset()
+			if State.Playing then
+				return false
+			end
+			State.Loaded = false
+			return true
+		end
+
+		return LoadingAnimation
+	end;
 };
+
+
+---------------------------------------------------------------------
+-- MODULE: ListScripts
+---------------------------------------------------------------------
 G2L_MODULES[G2L["4"]] = {
-Closure = function()
-    local script = G2L["4"];--!strict
-local url = "https://raw.githubusercontent.com/Crack-rbx/KantHub/main/Modules/ListScripts.lua"
+	Closure = function()
+		-- Para travar a versao do lister, troque "main" por um SHA de commit.
+		-- (Confirme tambem que o arquivo remoto e o lister de fato, e nao uma copia deste modulo.)
+		local REF = "main"
+		local URL = "https://raw.githubusercontent.com/Crack-rbx/KantHub/" .. REF .. "/Modules/ListScripts.lua"
+		local CHUNK_NAME = "=KantHub/Lister"
+		local MAX_SOURCE_BYTES = 262144 -- 256 KB
 
-local module = {}
+		local module = {}
 
-local lister: any = nil
-local function loadLister(): (any, string?)
-	if lister then
-		return lister, nil
-	end
+		local lister: any = nil
+		local inflight = false
 
-	local ok: boolean, source: any = pcall(function()
-		return game:HttpGet(url)
-	end)
-	if not ok then
-		return nil, "Failed to download the lister: " .. tostring(source)
-	end
+		-- Baixa, compila, executa e valida o lister. Nunca lanca erro: retorna (lister | nil, erro?).
+		local function fetchLister(): (any, string?)
+			local ok: boolean, source: any = pcall(function()
+				return game:HttpGet(URL)
+			end)
+			if not ok then
+				return nil, "Failed to download the lister: " .. tostring(source)
+			end
 
-	if type(source) ~= "string" or source == "" then
-		return nil, "The lister content is invalid."
-	end
+			if type(source) ~= "string" or source == "" then
+				return nil, "The lister content is invalid."
+			end
+			if #source > MAX_SOURCE_BYTES then
+				return nil, "The lister content is unexpectedly large."
+			end
 
-	local chunk: any, compileError: any = loadstring(source)
-	if not chunk then
-		return nil, "Failed to compile the lister: " .. tostring(compileError)
-	end
+			local loadOk: boolean, chunk: any, compileError: any = pcall(loadstring, source, CHUNK_NAME)
+			if not loadOk then
+				return nil, "loadstring is unavailable: " .. tostring(chunk)
+			end
+			if type(chunk) ~= "function" then
+				return nil, "Failed to compile the lister: " .. tostring(compileError)
+			end
 
-	local runOk: boolean, result: any = pcall(chunk)
-	if not runOk then
-		return nil, "Failed to run the lister: " .. tostring(result)
-	end
+			local runOk: boolean, result: any = pcall(chunk)
+			if not runOk then
+				return nil, "Failed to run the lister: " .. tostring(result)
+			end
 
-	if type(result) ~= "table" or type(result.getscript) ~= "function" then
-		return nil, "The lister does not expose a valid getscript function."
-	end
+			if type(result) ~= "table" or type(result.getscript) ~= "function" then
+				return nil, "The lister does not expose a valid getscript function."
+			end
 
-	lister = result
-	return lister, nil
-end
+			return result, nil
+		end
 
-function module.getscript(placeId: number?): (string?, string?)
-	local list: any, loadError: string? = loadLister()
-	if not list then
-		return nil, loadError
-	end
+		local function loadLister(): (any, string?)
+			if lister then
+				return lister, nil
+			end
 
-	local callOk: boolean, code: any, err: any = pcall(list.getscript, placeId)
-	if not callOk then
-		return nil, "The lister errored: " .. tostring(code)
-	end
+			-- evita downloads simultaneos: quem chega durante um download espera por ele
+			while inflight do
+				task.wait()
+				if lister then
+					return lister, nil
+				end
+			end
 
-	if type(code) ~= "string" or code == "" then
-		return nil, if type(err) == "string" then err else "The lister returned no code."
-	end
+			inflight = true
+			local ok, result, err = pcall(fetchLister)
+			inflight = false
 
-	return code, nil
-end
+			if not ok then
+				return nil, "Unexpected failure while loading the lister: " .. tostring(result)
+			end
+			if not result then
+				return nil, err
+			end
 
-return module
-end;
+			lister = result
+			return lister, nil
+		end
+
+		function module.getscript(placeId: number?): (string?, string?)
+			local list: any, loadError: string? = loadLister()
+			if not list then
+				return nil, loadError
+			end
+
+			local callOk: boolean, code: any, err: any = pcall(list.getscript, placeId)
+			if not callOk then
+				return nil, "The lister errored: " .. tostring(code)
+			end
+
+			if type(code) ~= "string" or code == "" then
+				return nil, if type(err) == "string" then err else "The lister returned no code."
+			end
+
+			return code, nil
+		end
+
+		-- Compila o codigo obtido em getscript e devolve a funcao pronta para executar.
+		-- Nao executa nada; nunca lanca erro: retorna (funcao | nil, erro?).
+		-- (Ponto certo para uma futura verificacao de assinatura/integridade do codigo.)
+		function module.compile(code: string, chunkName: string?): (any, string?)
+			if type(code) ~= "string" or code == "" then
+				return nil, "There is no code to compile."
+			end
+
+			local ok: boolean, chunk: any, compileError: any = pcall(loadstring, code, chunkName or "=KantHub/Script")
+			if not ok then
+				return nil, "loadstring is unavailable: " .. tostring(chunk)
+			end
+			if type(chunk) ~= "function" then
+				return nil, "Failed to compile the script: " .. tostring(compileError)
+			end
+
+			return chunk, nil
+		end
+
+		return module
+	end;
 };
--- StarterGui.Loader.Scripts.Loader
-local function C_6()
-local script = G2L["6"];
-	--!strict
-	---------------------------------------------------------------------
-	-- STATE
-	---------------------------------------------------------------------
+
+
+---------------------------------------------------------------------
+-- CONTROLLER
+---------------------------------------------------------------------
+local Controller = (function()
 	local MODULE_WAIT_TIMEOUT = 10
-	
+	local FETCH_TIMEOUT = 30
+
 	local State = {
 		Initializing = false,
-		Initialized = false,
-		Destroyed = false,
-		Connections = {} :: { RBXScriptConnection },
-		ScriptCode = nil :: string?,
+		Initialized  = false,
+		Running      = false,
+		Destroyed    = false,
+		Connections  = {},
+		ScriptCode   = nil,
 	}
-	
-	---------------------------------------------------------------------
+
+	local LoadingAnimation
+	local ListScripts
+
+	-----------------------------------------------------------------
 	-- LIFECYCLE
-	---------------------------------------------------------------------
+	-----------------------------------------------------------------
 	local function IsAlive(): boolean
 		return not State.Destroyed
 	end
-	
-	local function Connect(signal: RBXScriptSignal, callback: () -> (), label: string): RBXScriptConnection?
+
+	local function Connect(signal, callback, label)
 		if not IsAlive() then
 			return nil
 		end
-	
+
 		local success, connection = pcall(function()
 			return signal:Connect(callback)
 		end)
-	
 		if not success then
 			warn(("[KantHub] %s failed: %s"):format(label, tostring(connection)))
 			return nil
 		end
-	
+
 		table.insert(State.Connections, connection)
-	
 		return connection
 	end
-	
+
 	local function DisconnectAll()
 		for index = #State.Connections, 1, -1 do
 			local connection = State.Connections[index]
-	
 			pcall(function()
-				if connection.Connected then
-					connection:Disconnect()
-				end
+				connection:Disconnect()
 			end)
-	
 			State.Connections[index] = nil
 		end
 	end
-	
+
 	local function Destroy()
 		if State.Destroyed then
 			return
 		end
-	
+
 		State.Destroyed = true
 		State.Initializing = false
 		State.Initialized = false
+		State.Running = false
 		State.ScriptCode = nil
-	
+
 		DisconnectAll()
-	
-		print("[KantHub] Loading animation controller shut down.")
+
+		if LoadingAnimation then
+			pcall(function()
+				LoadingAnimation:Destroy()
+			end)
+			LoadingAnimation = nil
+		end
+		ListScripts = nil
+
+		-- a conexao Destroying ja foi desfeita acima, entao nao ha reentrada
+		pcall(function()
+			G2L["1"]:Destroy()
+		end)
+
+		print("[KantHub] Loader controller shut down.")
 	end
-	
-	---------------------------------------------------------------------
+
+	-----------------------------------------------------------------
 	-- VALIDATION / LOADING
-	---------------------------------------------------------------------
-	type LoadingAnimationModule = {
-		Init: (self: LoadingAnimationModule, screenGui: ScreenGui) -> any,
-		Play: (self: LoadingAnimationModule) -> boolean,
-	}
-	
-	type ListScriptsModule = {
-	    getscript: (placeId: number?) -> (string?, string?),
-    }
-	
-	type ListScriptsResult = {
-		Code: string?,
-		Error: string?,
-	}
-	
-	local function GetScreenGui(): ScreenGui
-		local parent = script.Parent
-		local screenGui = if parent then parent.Parent else nil
-	
-		if not screenGui then
+	-----------------------------------------------------------------
+	local function GetScreenGui()
+		local screenGui = G2L["1"]
+		if not screenGui or not screenGui:IsA("ScreenGui") then
 			error("ScreenGui is unavailable.", 0)
 		end
-	
-		if not screenGui:IsA("ScreenGui") then
-			error("ScreenGui must be a ScreenGui.", 0)
-		end
-	
 		return screenGui
 	end
-	
-	local function GetModulesFolder(screenGui: ScreenGui): Folder
+
+	local function GetModulesFolder(screenGui)
 		local modulesFolder = screenGui:WaitForChild("Modules", MODULE_WAIT_TIMEOUT)
-	
 		if not modulesFolder then
 			error("Modules folder is unavailable.", 0)
 		end
-	
 		if not modulesFolder:IsA("Folder") then
 			error("Modules must be a Folder.", 0)
 		end
-	
 		return modulesFolder
 	end
-	
-	local function LoadLoadingAnimation(modulesFolder: Folder): LoadingAnimationModule
-		local moduleScript = modulesFolder:FindFirstChild("LoadingAnimation")
-	
+
+	local function LoadModule(modulesFolder, name: string, requiredFunctions: { string })
+		local moduleScript = modulesFolder:FindFirstChild(name)
 		if not moduleScript then
-			error("Module 'LoadingAnimation' was not found.", 0)
+			error(("Module '%s' was not found."):format(name), 0)
 		end
-	
 		if not moduleScript:IsA("ModuleScript") then
-			error("'LoadingAnimation' must be a ModuleScript.", 0)
+			error(("'%s' must be a ModuleScript."):format(name), 0)
 		end
-	
-		local success, result = pcall(function()
-			return require(moduleScript) :: any
-		end)
-	
+
+		local success, result = pcall(require, moduleScript)
 		if not success then
-			error(("Failed to load module 'LoadingAnimation': %s"):format(tostring(result)), 0)
+			error(("Failed to load module '%s': %s"):format(name, tostring(result)), 0)
 		end
-	
 		if type(result) ~= "table" then
-			error("Module 'LoadingAnimation' must return a table.", 0)
+			error(("Module '%s' must return a table."):format(name), 0)
 		end
-	
-		if type(result.Init) ~= "function" then
-			error("Module 'LoadingAnimation' is missing required function 'Init'.", 0)
+
+		for _, functionName in ipairs(requiredFunctions) do
+			if type(result[functionName]) ~= "function" then
+				error(("Module '%s' is missing required function '%s'."):format(name, functionName), 0)
+			end
 		end
-	
-		if type(result.Play) ~= "function" then
-			error("Module 'LoadingAnimation' is missing required function 'Play'.", 0)
-		end
-	
-		return result :: LoadingAnimationModule
+
+		return result
 	end
-	
-	local function execute(code: string, chunkName: string?): (boolean, string?)
-		if type(code) ~= "string" or code == "" then
-			return false, "Nenhum código para executar."
+
+	local function Initialize(): boolean
+		if State.Destroyed then
+			return false
 		end
-	
-		local chunk: any, compileError: any = loadstring(code, chunkName or "=KantHubScript")
-		if not chunk then
-			return false, "Falha ao compilar o script: " .. tostring(compileError)
+		if State.Initialized then
+			return true
 		end
-	
-		-- runs in a separate thread: it doesn’t block the Loader, and a script error doesn’t crash the controller
+		if State.Initializing then
+			return false
+		end
+
+		State.Initializing = true
+
+		local animation, lister
+		local ok, err = pcall(function()
+			local screenGui = GetScreenGui()
+			local modulesFolder = GetModulesFolder(screenGui)
+
+			animation = LoadModule(modulesFolder, "LoadingAnimation", { "Init", "Play" })
+			lister = LoadModule(modulesFolder, "ListScripts", { "getscript", "compile" })
+
+			if not IsAlive() then
+				return
+			end
+			animation:Init(screenGui)
+		end)
+
+		-- pode ter sido destruido durante os yields acima
+		if not IsAlive() then
+			if animation then
+				pcall(function()
+					animation:Destroy()
+				end)
+			end
+			return false
+		end
+
+		State.Initializing = false
+
+		if not ok then
+			warn("[KantHub] Initialization failed: " .. tostring(err))
+			Destroy()
+			return false
+		end
+
+		LoadingAnimation = animation
+		ListScripts = lister
+		State.Initialized = true
+
+		Connect(G2L["1"].Destroying, function()
+			Destroy()
+		end, "ScreenGui.Destroying")
+
+		return true
+	end
+
+	-----------------------------------------------------------------
+	-- RUN
+	-----------------------------------------------------------------
+	local function Run(): boolean
+		if not Initialize() then
+			return false
+		end
+		if State.Running then
+			return false
+		end
+		State.Running = true
+
+		local animation, lister = LoadingAnimation, ListScripts
+
+		-- 1) baixa o script em paralelo com a animacao
+		local fetched = { Done = false, Code = nil, Error = nil }
 		task.spawn(function()
-			local ok, err = xpcall(chunk, debug.traceback)
+			local ok, code, err = pcall(lister.getscript, game.PlaceId)
 			if not ok then
-				warn("[KantHub] O script falhou ao executar:\n" .. tostring(err))
+				fetched.Error = tostring(code)
+			else
+				fetched.Code, fetched.Error = code, err
+			end
+			fetched.Done = true
+		end)
+
+		-- 2) anima a tela de carregamento (falha na animacao nao impede o carregamento)
+		local animOk, animErr = pcall(function()
+			animation:Play()
+		end)
+		if not animOk then
+			warn("[KantHub] Loading animation failed: " .. tostring(animErr))
+		end
+		if not IsAlive() then
+			return false
+		end
+
+		-- 3) aguarda o download terminar (com limite de tempo)
+		local deadline = os.clock() + FETCH_TIMEOUT
+		while not fetched.Done and IsAlive() and os.clock() < deadline do
+			task.wait()
+		end
+		if not IsAlive() then
+			return false
+		end
+		if not fetched.Done then
+			warn("[KantHub] Timed out while downloading the script.")
+			Destroy()
+			return false
+		end
+		if type(fetched.Code) ~= "string" then
+			warn("[KantHub] No script available: " .. tostring(fetched.Error or "unknown error"))
+			Destroy()
+			return false
+		end
+
+		-- 4) compila
+		State.ScriptCode = fetched.Code
+		local chunk, compileError = lister.compile(fetched.Code)
+		State.ScriptCode = nil
+		if not chunk then
+			warn("[KantHub] " .. tostring(compileError))
+			Destroy()
+			return false
+		end
+
+		-- 5) executa em uma thread propria e protegida: scripts que yieldam ou falham
+		--    nao afetam o controlador
+		task.spawn(function()
+			local ok, runError = xpcall(chunk, debug.traceback)
+			if not ok then
+				warn("[KantHub] Script error: " .. tostring(runError))
 			end
 		end)
-	
-		return true, nil
-	end
-	
-	local function LoadListScripts(modulesFolder: Folder): ListScriptsModule
-		local moduleScript = modulesFolder:FindFirstChild("ListScripts")
-	
-		if not moduleScript then
-			error("[KantHub] Module 'ListScripts' was not found.", 0)
-		end
-	
-		if not moduleScript:IsA("ModuleScript") then
-			error("[KantHub] 'ListScripts' must be a ModuleScript.", 0)
-		end
-	
-		local success, result = pcall(function()
-			return require(moduleScript) :: any
-		end)
-	
-		if not success then
-			error(("[KantHub] Failed to load module 'ListScripts': %s"):format(tostring(result)), 0)
-		end
-	
-		if type(result) ~= "table" then
-			error("[KantHub] Module 'ListScripts' must return a table.", 0)
-		end
-	
-		if type(result.getscript) ~= "function" then
-			error("[KantHub] Module 'ListScripts' is missing required function 'getscript'.", 0)
-		end
-	
-		return result :: ListScriptsModule
-	end
-	
-	local function FetchScriptCode(listScripts: ListScriptsModule, placeId: number): string
-		local success, result = pcall(function(): ListScriptsResult
-			local code, err = listScripts.getscript(placeId)
-	
-			return { Code = code, Error = err }
-		end)
-	
-		if not success then
-			error("[KantHub] 'ListScripts.getscript' errored: " .. tostring(result), 0)
-		end
-	
-		local code = result.Code
-		local err = result.Error
-	
-		if code == nil or code == "" then
-			local reason = if err ~= nil and err ~= "" then err else "no code was returned"
-			error("[KantHub] No script available for PlaceId " .. tostring(placeId) .. ": " .. reason, 0)
-		end
-	
-		return code
-	end
-	
-	---------------------------------------------------------------------
-	-- INITIALIZATION
-	---------------------------------------------------------------------
-	local function Run()
-		local screenGui = GetScreenGui()
-		local modulesFolder = GetModulesFolder(screenGui)
-		local loadingAnimation = LoadLoadingAnimation(modulesFolder)
-		local listScripts = LoadListScripts(modulesFolder)
-		Connect(screenGui.Destroying, Destroy, "ScreenGui destroying")
-	
-		-- getscript may yield, so the controller can be destroyed meanwhile.
-		local scriptCode = FetchScriptCode(listScripts, game.PlaceId)
-	
-		if not IsAlive() then
-			return
-		end
-	
-		-- Only stored and validated here; executing it is intentionally out of scope.
-		State.ScriptCode = scriptCode
-	
-		loadingAnimation:Init(screenGui)
-		loadingAnimation:Play()          -- yielda ~4s
-	
-		if not IsAlive() then
-			return
-		end
-	
-		local code = State.ScriptCode
-		State.ScriptCode = nil
-	
-		if code then
-	        local ok, err = execute(code, "=KantHub/" .. tostring(game.PlaceId))
-	        if not ok then
-		        error("[KantHub] " .. tostring(err), 0)
-	        end
-	    end
-    end
-	
-	local function Initialize(): (boolean, string?)
-		if State.Destroyed then
-			return false, "The controller has already been destroyed."
-		end
-	
-		if State.Initialized then
-			return true, nil
-		end
-	
-		if State.Initializing then
-			return false, "Initialization is already in progress."
-		end
-	
-		State.Initializing = true
-	
-		local success, err = pcall(function(): any
-			Run()
-	
-			return nil
-		end)
-	
-		if not success then
-			Destroy()
-			return false, tostring(err)
-		end
-	
-		State.Initializing = false
-	
-		if State.Destroyed then
-			return false, "The controller was destroyed during initialization."
-		end
-	
-		State.Initialized = true
-	
-		return true, nil
-	end
-	
-	---------------------------------------------------------------------
-	-- EXECUTION
-	---------------------------------------------------------------------
-	local initialized, initializationError = Initialize()
-	
-	if not initialized then
-		warn("[KantHub] Initialization failed: " .. tostring(initializationError))
-		return
-	end
-	
-	Connect(script.Destroying, Destroy, "Loader destruction")
-end;
-task.spawn(C_6);
 
-return G2L["1"], require;
+		-- 6) fim do loader: limpa a GUI e as conexoes
+		Destroy()
+		return true
+	end
+
+	return {
+		Initialize = Initialize,
+		Run        = Run,
+		Destroy    = Destroy,
+		IsAlive    = IsAlive,
+	}
+end)()
+
+
+---------------------------------------------------------------------
+-- FINALIZE
+---------------------------------------------------------------------
+-- Remove somente Loaders antigos deste projeto (marcados por atributo),
+-- sem tocar em GUIs do jogo que tenham o mesmo nome.
+for _, child in ipairs(PlayerGui:GetChildren()) do
+	if child:IsA("ScreenGui") and child:GetAttribute("KantHubLoader") == true then
+		child:Destroy()
+	end
+end
+
+G2L["1"].Parent = PlayerGui
+
+if AUTO_RUN then
+	task.spawn(Controller.Run)
+end
+
+return G2L["1"], require, Controller;
